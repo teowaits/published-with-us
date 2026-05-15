@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Published With Us Yet?</title>
+  <meta name="description" content="Check whether authors from a journal-overlap export have already published in your journal." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0d111c;
+      --surface:     #131826;
+      --surface2:    #161b2a;
+      --surface3:    #1c2235;
+      --border:      #1e2436;
+      --border2:     #2d3449;
+      --text:        #e2e8f0;
+      --muted:       #718096;
+      --muted2:      #4a5568;
+      --blue:        #63b3ed;
+      --blue-light:  #90cdf4;
+      --blue-dim:    #2a4a6b;
+      --green:       #9ae6b4;
+      --green-dim:   #1a3d2b;
+      --green-light: #c6f6d5;
+      --amber:       #f6ad55;
+      --amber-dim:   #4a2e0a;
+      --amber-light: #fbd38d;
+      --purple:      #b794f4;
+      --purple-dim:  #3b2a6e;
+      --red:         #fc8181;
+      --glass-new:   rgba(26, 61, 43, 0.35);
+      --glass-done:  rgba(42, 26, 90, 0.35);
+    }
+
+    html { font-size: 15px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 4rem;
+    }
+
+    /* ── Animated background grid ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(99,179,237,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,179,237,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    header { padding: 2.5rem 0 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
+    .header-inner { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+    .logo-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      background: var(--blue-dim);
+      border: 1px solid rgba(99,179,237,0.25);
+      border-radius: 4px;
+      padding: 3px 8px;
+    }
+    h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+      line-height: 1.5;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .card-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    /* Steps 1 + 2 side by side */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+      align-items: stretch;
+    }
+    .steps-grid > .card { margin-bottom: 0; }
+    @media (max-width: 600px) {
+      .steps-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Step badges ── */
+    .step-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 0.75rem;
+    }
+    .step-num {
+      width: 18px; height: 18px;
+      background: var(--blue-dim);
+      border: 1px solid rgba(99,179,237,0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem;
+    }
+
+    /* ── File upload ── */
+    .upload-zone {
+      border: 2px dashed var(--border2);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      min-height: 0;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--blue);
+      background: rgba(99,179,237,0.04);
+    }
+    .upload-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-icon { font-size: 1.5rem; margin-bottom: 0.35rem; opacity: 0.5; }
+    .upload-text { font-size: 0.8125rem; color: var(--muted); line-height: 1.35; }
+    .upload-text strong { color: var(--blue); }
+    .upload-loaded {
+      background: rgba(154,230,180,0.06);
+      border-color: rgba(154,230,180,0.3);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+    }
+    .upload-loaded .upload-icon { opacity: 1; margin-bottom: 0; font-size: 1.2rem; flex-shrink: 0; }
+    .upload-loaded .upload-text { flex: 1; min-width: 0; font-size: 0.8rem; }
+    .upload-loaded .upload-text br { display: none; }
+
+    /* ── Journal search ── */
+    .search-row { display: flex; gap: 0.75rem; align-items: flex-start; flex-wrap: wrap; }
+    .search-wrapper { flex: 1; min-width: 220px; position: relative; }
+    .search-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 0.625rem 0.875rem;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.875rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--blue); }
+    .search-input::placeholder { color: var(--muted2); }
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      z-index: 100;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .dropdown-item {
+      padding: 0.6rem 0.875rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.15s;
+      border-bottom: 1px solid var(--border);
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: var(--surface3); }
+    .dropdown-item .di-name { color: var(--text); }
+    .dropdown-item .di-meta { color: var(--muted); font-size: 0.7rem; font-family: 'IBM Plex Mono', monospace; margin-top: 1px; }
+
+    /* Selected journal chip */
+    .journal-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--blue-dim);
+      border: 1px solid rgba(99,179,237,0.3);
+      border-radius: 6px;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--blue-light);
+      margin-top: 0.5rem;
+    }
+    .chip-remove {
+      cursor: pointer;
+      opacity: 0.6;
+      font-size: 0.9rem;
+      line-height: 1;
+      padding: 0 2px;
+    }
+    .chip-remove:hover { opacity: 1; }
+
+    /* Example pills */
+    .examples-row { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .examples-label { font-size: 0.72rem; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+    .example-pill {
+      font-size: 0.72rem;
+      color: var(--blue);
+      background: transparent;
+      border: 1px solid var(--blue-dim);
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .example-pill:hover { background: var(--blue-dim); border-color: rgba(99,179,237,0.5); }
+
+    /* Year window */
+    .year-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
+    .year-label { font-size: 0.8rem; color: var(--muted); }
+    .year-select {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      padding: 0.3rem 0.6rem;
+      color: var(--text);
+      font-size: 0.8rem;
+      font-family: 'IBM Plex Mono', monospace;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ── Run button ── */
+    .run-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      border: none;
+      border-radius: 7px;
+      padding: 0.7rem 1.5rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px rgba(37,99,235,0.3);
+    }
+    .run-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 30px rgba(37,99,235,0.5); }
+    .run-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .cancel-btn {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      border-radius: 7px;
+      padding: 0.7rem 1.25rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .cancel-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── Progress ── */
+    .progress-wrap { margin-top: 1.25rem; display: none; }
+    .progress-wrap.visible { display: block; }
+    .progress-bar-track {
+      height: 4px;
+      background: var(--border2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 0.6rem;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--blue-light));
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+    .progress-log {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      min-height: 1.2rem;
+    }
+    .progress-log span { color: var(--blue); }
+
+    /* ── Results: two-panel layout ── */
+    #results { display: none; }
+    #results.visible { display: block; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .results-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .results-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    .results-meta strong { color: var(--text); }
+
+    .panels-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 680px) { .panels-grid { grid-template-columns: 1fr; } }
+
+    /* ── Glass panels ── */
+    .glass-panel {
+      border-radius: 12px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: relative;
+    }
+    .glass-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      pointer-events: none;
+    }
+
+    .panel-new {
+      background: var(--glass-new);
+      border: 1px solid rgba(154,230,180,0.2);
+      box-shadow: 0 0 40px rgba(154,230,180,0.05), inset 0 1px 0 rgba(154,230,180,0.1);
+    }
+    .panel-new::before {
+      background: radial-gradient(ellipse at 50% 0%, rgba(154,230,180,0.06) 0%, transparent 70%);
+    }
+
+    .panel-done {
+      background: var(--glass-done);
+      border: 1px solid rgba(183,148,244,0.2);
+      box-shadow: 0 0 40px rgba(183,148,244,0.05), inset 0 1px 0 rgba(183,148,244,0.1);
+    }
+    .panel-done::before {
+      background: radial-gradient(ellipse at 50% 0%, rgba(183,148,244,0.06) 0%, transparent 70%);
+    }
+
+    .panel-header {
+      padding: 1.1rem 1.25rem 0.9rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-title-row { display: flex; align-items: center; gap: 0.6rem; }
+    .panel-icon { font-size: 1.3rem; }
+    .panel-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+    .panel-new .panel-title { color: var(--green-light); }
+    .panel-done .panel-title { color: #d6bcfa; }
+
+    .panel-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .panel-new .panel-count { color: var(--green); }
+    .panel-done .panel-count { color: var(--purple); }
+
+    .panel-desc {
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding: 0.5rem 1.25rem 0.8rem;
+    }
+
+    .export-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 5px;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s;
+      margin: 0 1.25rem 1rem;
+    }
+    .panel-new .export-btn {
+      color: var(--green);
+      border-color: rgba(154,230,180,0.3);
+      background: rgba(154,230,180,0.06);
+    }
+    .panel-new .export-btn:hover { background: rgba(154,230,180,0.12); }
+    .panel-done .export-btn {
+      color: var(--purple);
+      border-color: rgba(183,148,244,0.3);
+      background: rgba(183,148,244,0.06);
+    }
+    .panel-done .export-btn:hover { background: rgba(183,148,244,0.12); }
+
+    .author-list {
+      max-height: 520px;
+      overflow-y: auto;
+      padding: 0 1.25rem 1.25rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+    .author-list::-webkit-scrollbar { width: 4px; }
+    .author-list::-webkit-scrollbar-track { background: transparent; }
+    .author-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .author-card {
+      background: rgba(0,0,0,0.2);
+      border-radius: 7px;
+      padding: 0.65rem 0.85rem;
+      margin-bottom: 0.5rem;
+      transition: all 0.15s;
+      animation: cardIn 0.35s ease both;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .author-card:hover { background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.07); }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .ac-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+    .ac-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .ac-inst { font-size: 0.72rem; color: var(--muted); }
+    .ac-citations {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--amber);
+      background: var(--amber-dim);
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+    .ac-links { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
+    .ac-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--blue);
+      text-decoration: none;
+      border: 1px solid var(--blue-dim);
+      border-radius: 3px;
+      padding: 1px 5px;
+      transition: all 0.15s;
+    }
+    .ac-link:hover { background: var(--blue-dim); }
+    .ac-pub-count {
+      font-size: 0.68rem;
+      color: var(--purple);
+      margin-top: 0.3rem;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .ac-year-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--blue);
+      background: var(--blue-dim);
+      border-radius: 3px;
+      padding: 1px 5px;
+      flex-shrink: 0;
+    }
+    .ac-sample-row {
+      margin-top: 0.4rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      font-size: 0.72rem;
+      line-height: 1.35;
+    }
+    .ac-sample-title {
+      font-style: italic;
+      color: var(--text);
+      min-width: 0;
+    }
+    .ac-sample-title a {
+      color: var(--blue-light);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(99,179,237,0.35);
+    }
+    .ac-sample-title a:hover { color: var(--blue); border-bottom-color: var(--blue); }
+    .ac-latest-row {
+      margin-top: 0.4rem;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+    .ac-latest-row .ac-latest-label { color: var(--muted2); margin-right: 0.25rem; }
+    .ac-latest-title { font-style: italic; color: var(--text); }
+    .ac-latest-title a {
+      color: var(--blue-light);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(99,179,237,0.35);
+    }
+    .ac-latest-title a:hover { color: var(--blue); border-bottom-color: var(--blue); }
+    .ac-latest-meta { color: var(--muted); margin-top: 0.15rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .empty-state .es-icon { font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.4; }
+
+    /* ── Error banner ── */
+    .error-banner {
+      background: rgba(252,129,129,0.08);
+      border: 1px solid rgba(252,129,129,0.25);
+      border-radius: 7px;
+      padding: 0.75rem 1rem;
+      color: var(--red);
+      font-size: 0.8rem;
+      margin-top: 1rem;
+      display: none;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .error-banner.visible { display: block; }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted2);
+      line-height: 1.8;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--blue); }
+
+    /* ── Onboarding hint ── */
+    .onboarding {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .onboarding strong { color: var(--blue); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <span class="logo-badge">Author Filter</span>
+      <h1>Published With Us Yet?</h1>
+    </div>
+    <p class="subtitle">
+      Upload an author list from <strong style="color:var(--blue)">journal-overlap</strong> or similar tools,
+      enter a journal name, and instantly see who's already published with you — and who's a fresh opportunity.
+    </p>
+  </header>
+
+  <div class="steps-grid">
+  <!-- Step 1: Upload -->
+  <div class="card">
+    <div class="step-label"><span class="step-num">1</span> Upload author list</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="csvFile" accept=".csv" />
+      <div class="upload-icon" id="uploadIcon">📄</div>
+      <div class="upload-text" id="uploadText">
+        <strong>Click to choose</strong> or drag & drop a CSV file<br/>
+        <small style="color:var(--muted2);font-size:0.72rem">Supports journal-overlap exports and any CSV with an <code style="color:var(--blue)">OpenAlex ID</code> column</small>
+      </div>
+    </div>
+    <div class="onboarding" id="onboarding">
+      💡 <strong>How it works:</strong> The tool reads the <code style="color:var(--blue)">OpenAlex ID</code> column from your CSV, then queries the OpenAlex API to check if each author has published in your target journal within the selected time window. Authors are then sorted into two groups: <strong style="color:var(--green)">new prospects</strong> and <strong style="color:var(--purple)">already published with you</strong>. Both groups can be exported as CSV files preserving the original schema.
+    </div>
+  </div>
+
+  <!-- Step 2: Journal -->
+  <div class="card">
+    <div class="step-label"><span class="step-num">2</span> Choose target journal</div>
+    <div class="search-row">
+      <div class="search-wrapper">
+        <input class="search-input" type="text" id="journalInput" placeholder="Type a journal name to search…" autocomplete="off" />
+        <div class="dropdown" id="journalDropdown" style="display:none"></div>
+      </div>
+    </div>
+    <div id="selectedJournal"></div>
+    <div class="examples-row">
+      <span class="examples-label">Try:</span>
+      <button type="button" class="example-pill" data-preset="0">Advanced Intelligent Systems</button>
+      <button type="button" class="example-pill" data-preset="1">Advanced Intelligent Discovery</button>
+    </div>
+    <div class="year-row">
+      <span class="year-label">Publication window:</span>
+      <select class="year-select" id="yearWindow">
+        <option value="1">Last 1 year</option>
+        <option value="2">Last 2 years</option>
+        <option value="3" selected>Last 3 years</option>
+        <option value="5">Last 5 years</option>
+        <option value="10">Last 10 years</option>
+        <option value="0">All time</option>
+      </select>
+    </div>
+  </div>
+  </div>
+
+  <!-- Step 3: Run -->
+  <div class="card" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+    <button class="run-btn" id="runBtn" disabled>
+      ▶ Check authors
+    </button>
+    <button class="cancel-btn" id="cancelBtn" style="display:none">✕ Cancel</button>
+    <div style="flex:1;min-width:200px">
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <div class="progress-log" id="progressLog">Ready.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-banner" id="errorBanner"></div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="results-header">
+      <div class="results-title">Results</div>
+      <div class="results-meta" id="resultsMeta"></div>
+    </div>
+    <div class="panels-grid">
+      <!-- New prospects -->
+      <div class="glass-panel panel-new">
+        <div class="panel-header">
+          <div class="panel-title-row">
+            <span class="panel-icon">🌱</span>
+            <span class="panel-title">New Prospects</span>
+          </div>
+          <span class="panel-count" id="countNew">0</span>
+        </div>
+        <div class="panel-desc" id="descNew">Authors who have <em>not</em> yet published in your journal — prime candidates for outreach.</div>
+        <button class="export-btn" id="exportNew" onclick="exportCSV('new')">⬇ Export CSV</button>
+        <div class="author-list" id="listNew"></div>
+      </div>
+      <!-- Already published -->
+      <div class="glass-panel panel-done">
+        <div class="panel-header">
+          <div class="panel-title-row">
+            <span class="panel-icon">✦</span>
+            <span class="panel-title">Already With Us</span>
+          </div>
+          <span class="panel-count" id="countDone">0</span>
+        </div>
+        <div class="panel-desc" id="descDone">Authors who have already published in your journal within the selected window.</div>
+        <button class="export-btn" id="exportDone" onclick="exportCSV('done')">⬇ Export CSV</button>
+        <div class="author-list" id="listDone"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="container">
+  <footer>
+    Created by teowaits · Sibling tool to <a href="https://teowaits.github.io/journal-overlap/" target="_blank">journal-overlap</a> · Data from <a href="https://openalex.org" target="_blank">OpenAlex API</a> (CC0) · MIT License
+  </footer>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+let parsedAuthors   = [];   // raw rows from CSV
+let csvHeaders      = [];   // original headers
+let selectedJournal = null; // { id, display_name, issn }
+let abortController = null;
+let newProspects    = [];
+let alreadyPublished = [];
+let debounceTimer   = null;
+
+const PRESET_JOURNALS = [
+  {
+    id: 'S4210212817',
+    display_name: 'Advanced Intelligent Systems',
+    issn: '2640-4567'
+  },
+  {
+    id: 'S5407036554',
+    display_name: 'Advanced Intelligent Discovery',
+    issn: null
+  }
+];
+
+/* ══════════════════════════════════════════════
+   OPENALEX
+══════════════════════════════════════════════ */
+const OA_BASE = 'https://api.openalex.org';
+const DELAY_MS = 80;
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+async function oaGet(path, params = {}, signal) {
+  const url = new URL(OA_BASE + path);
+  url.searchParams.set('mailto', 'editorial-tools@placeholder.org');
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error(`OpenAlex ${res.status} on ${path}`);
+  return res.json();
+}
+
+async function resolveJournal(name, signal) {
+  const data = await oaGet('/sources', {
+    search: name,
+    filter: 'type:journal',
+    per_page: 6,
+    select: 'id,display_name,issn_l,works_count'
+  }, signal);
+  return (data.results || []).map(s => ({
+    id: s.id.replace('https://openalex.org/', ''),
+    display_name: s.display_name,
+    issn: s.issn_l,
+    works_count: s.works_count
+  }));
+}
+
+async function checkAuthorPublished(authorId, journalId, fromYear, signal) {
+  const filter = fromYear > 0
+    ? `author.id:${authorId},primary_location.source.id:${journalId},publication_year:${fromYear}-${new Date().getFullYear()}`
+    : `author.id:${authorId},primary_location.source.id:${journalId}`;
+
+  const data = await oaGet('/works', {
+    filter,
+    sort: 'publication_year:desc',
+    per_page: 1,
+    select: 'id,title,doi,publication_year'
+  }, signal);
+  return {
+    published: (data.meta?.count || 0) > 0,
+    count: data.meta?.count || 0,
+    sample: data.results?.[0] || null
+  };
+}
+
+/* ══════════════════════════════════════════════
+   CSV PARSING
+══════════════════════════════════════════════ */
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) throw new Error('CSV appears empty or has no data rows.');
+
+  const headers = parseCSVLine(lines[0]);
+  const oaIdx   = headers.findIndex(h => h.trim().toLowerCase().replace(/\s/g,'') === 'openalex id' || h.trim().toLowerCase() === 'openalex_id');
+
+  if (oaIdx === -1) {
+    // Try flexible detection
+    const altIdx = headers.findIndex(h => /openalex/i.test(h) && /id/i.test(h));
+    if (altIdx === -1) throw new Error(`Could not find an "OpenAlex ID" column. Found headers: ${headers.join(', ')}`);
+  }
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const cells = parseCSVLine(lines[i]);
+    const row = {};
+    headers.forEach((h, idx) => { row[h.trim()] = (cells[idx] || '').trim(); });
+    rows.push(row);
+  }
+  return { headers: headers.map(h => h.trim()), rows };
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      result.push(cur); cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function getOpenAlexId(row) {
+  // Try various column names
+  for (const key of Object.keys(row)) {
+    if (/openalex/i.test(key) && /id/i.test(key)) {
+      const val = row[key];
+      if (val && /^A\d+$/.test(val.trim())) return val.trim();
+    }
+  }
+  return null;
+}
+
+/* ══════════════════════════════════════════════
+   FILE UPLOAD
+══════════════════════════════════════════════ */
+const uploadZone = document.getElementById('uploadZone');
+const csvFileInput = document.getElementById('csvFile');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+csvFileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const { headers, rows } = parseCSV(e.target.result);
+      const validRows = rows.filter(r => getOpenAlexId(r));
+      if (validRows.length === 0) throw new Error('No valid OpenAlex IDs found in the file.');
+      csvHeaders = headers;
+      parsedAuthors = rows;
+      document.getElementById('uploadIcon').textContent = '✅';
+      document.getElementById('uploadText').innerHTML = `<strong style="color:var(--green)">${file.name}</strong> — ${validRows.length} author${validRows.length !== 1 ? 's' : ''} with OpenAlex IDs loaded`;
+      uploadZone.classList.add('upload-loaded');
+      document.getElementById('onboarding').style.display = 'none';
+      checkRunReady();
+    } catch(err) {
+      showError('CSV parse error: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ══════════════════════════════════════════════
+   JOURNAL SEARCH
+══════════════════════════════════════════════ */
+const journalInput = document.getElementById('journalInput');
+const journalDropdown = document.getElementById('journalDropdown');
+
+journalInput.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  const q = journalInput.value.trim();
+  if (q.length < 2) { journalDropdown.style.display = 'none'; return; }
+  debounceTimer = setTimeout(() => searchJournals(q), 400);
+});
+
+journalInput.addEventListener('blur', () => {
+  setTimeout(() => { journalDropdown.style.display = 'none'; }, 200);
+});
+
+async function searchJournals(q) {
+  try {
+    const results = await resolveJournal(q, null);
+    if (!results.length) { journalDropdown.style.display = 'none'; return; }
+    journalDropdown.innerHTML = results.map(s => `
+      <div class="dropdown-item" data-id="${s.id}" data-name="${escapeAttr(s.display_name)}" data-issn="${s.issn || ''}">
+        <div class="di-name">${s.display_name}</div>
+        <div class="di-meta">${s.id}${s.issn ? ' · ISSN ' + s.issn : ''} · ${(s.works_count||0).toLocaleString()} works</div>
+      </div>
+    `).join('');
+    journalDropdown.querySelectorAll('.dropdown-item').forEach(el => {
+      el.addEventListener('mousedown', () => selectJournal({
+        id: el.dataset.id,
+        display_name: el.dataset.name,
+        issn: el.dataset.issn
+      }));
+    });
+    journalDropdown.style.display = 'block';
+  } catch(e) { /* ignore search errors */ }
+}
+
+function selectJournal(j) {
+  selectedJournal = j;
+  journalInput.value = '';
+  journalDropdown.style.display = 'none';
+  const el = document.getElementById('selectedJournal');
+  el.innerHTML = `<div class="journal-chip">
+    <span>✦ ${j.display_name}</span>
+    <span class="chip-meta" style="font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace">${j.id}</span>
+    <span class="chip-remove" onclick="clearJournal()">×</span>
+  </div>`;
+  checkRunReady();
+}
+
+function clearJournal() {
+  selectedJournal = null;
+  document.getElementById('selectedJournal').innerHTML = '';
+  checkRunReady();
+}
+
+function escapeAttr(s) { return s.replace(/"/g, '&quot;'); }
+
+document.querySelectorAll('.example-pill[data-preset]').forEach(btn => {
+  const idx = parseInt(btn.dataset.preset, 10);
+  btn.addEventListener('click', () => {
+    const j = PRESET_JOURNALS[idx];
+    if (j) selectJournal(j);
+  });
+});
+
+/* ══════════════════════════════════════════════
+   RUN / CANCEL
+══════════════════════════════════════════════ */
+function checkRunReady() {
+  document.getElementById('runBtn').disabled = !(parsedAuthors.length > 0 && selectedJournal);
+}
+
+document.getElementById('runBtn').addEventListener('click', runCheck);
+document.getElementById('cancelBtn').addEventListener('click', () => {
+  if (abortController) abortController.abort();
+});
+
+async function runCheck() {
+  hideError();
+  abortController = new AbortController();
+  const signal = abortController.signal;
+
+  const yearWindow = parseInt(document.getElementById('yearWindow').value);
+  const fromYear = yearWindow > 0 ? (new Date().getFullYear() - yearWindow + 1) : 0;
+
+  const validAuthors = parsedAuthors.filter(r => getOpenAlexId(r));
+  const total = validAuthors.length;
+
+  // UI state
+  setRunning(true);
+  setProgress(0, `Checking ${total} authors against ${selectedJournal.display_name}…`);
+  document.getElementById('results').classList.remove('visible');
+
+  newProspects = [];
+  alreadyPublished = [];
+
+  try {
+    for (let i = 0; i < validAuthors.length; i++) {
+      if (signal.aborted) break;
+      const row = validAuthors[i];
+      const id = getOpenAlexId(row);
+      const name = row['Name'] || row['name'] || id;
+
+      setProgress(
+        Math.round(((i) / total) * 100),
+        `Checking <span>${name}</span> (${i+1}/${total})`
+      );
+
+      try {
+        const result = await checkAuthorPublished(id, selectedJournal.id, fromYear, signal);
+        if (result.published) {
+          alreadyPublished.push({ row, pubCount: result.count, sample: result.sample });
+        } else {
+          newProspects.push({ row });
+        }
+      } catch(e) {
+        if (signal.aborted) break;
+        // treat API error as unverified → new prospect
+        newProspects.push({ row });
+      }
+
+      await delay(DELAY_MS);
+    }
+
+    let cancelledInEnrichment = false;
+    if (!signal.aborted && newProspects.length > 0) {
+      const m = newProspects.length;
+      for (let i = 0; i < m; i++) {
+        if (signal.aborted) {
+          cancelledInEnrichment = true;
+          break;
+        }
+        const prospect = newProspects[i];
+        const id = getOpenAlexId(prospect.row);
+        setProgress(
+          Math.round(((i + 1) / m) * 100),
+          `Fetching recent works for new prospects… (${i + 1}/${m})`
+        );
+        if (!id) {
+          prospect.recentWork = null;
+        } else {
+          try {
+            const data = await oaGet('/works', {
+              filter: `author.id:${id}`,
+              sort: 'publication_year:desc',
+              per_page: 1,
+              select: 'id,title,doi,publication_year,primary_location'
+            }, signal);
+            prospect.recentWork = data.results?.[0] || null;
+          } catch (e) {
+            if (signal.aborted) {
+              cancelledInEnrichment = true;
+              break;
+            }
+            prospect.recentWork = null;
+          }
+        }
+        await delay(DELAY_MS);
+      }
+      if (signal.aborted) cancelledInEnrichment = true;
+    }
+
+    if (cancelledInEnrichment) {
+      setProgress(0, 'Check cancelled.');
+    } else {
+      setProgress(100, `Done — ${newProspects.length} new, ${alreadyPublished.length} already published.`);
+      renderResults(fromYear, yearWindow);
+    }
+  } catch(e) {
+    if (!signal.aborted) showError('Check failed: ' + e.message);
+    setProgress(0, 'Check cancelled.');
+  } finally {
+    setRunning(false);
+  }
+}
+
+function setRunning(active) {
+  document.getElementById('runBtn').style.display = active ? 'none' : 'inline-flex';
+  document.getElementById('cancelBtn').style.display = active ? 'inline-flex' : 'none';
+  document.getElementById('progressWrap').classList.toggle('visible', true);
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLog').innerHTML = msg;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function truncate80(s) {
+  const t = String(s || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= 80) return t;
+  return t.slice(0, 77) + '…';
+}
+
+function workTitle(w) {
+  if (!w || w.title == null) return '';
+  const t = w.title;
+  return typeof t === 'string' ? t : '';
+}
+
+function doiToHref(doi) {
+  if (!doi) return '';
+  const s = String(doi).trim();
+  if (/^https?:\/\/(dx\.)?doi\.org\//i.test(s)) return s.replace(/^http:\/\//i, 'https://');
+  if (/^doi:/i.test(s)) return 'https://doi.org/' + s.slice(4).trim();
+  return 'https://doi.org/' + s;
+}
+
+/* ══════════════════════════════════════════════
+   RENDER RESULTS
+══════════════════════════════════════════════ */
+function renderResults(fromYear, windowYears) {
+  const windowLabel = windowYears > 0 ? `last ${windowYears} year${windowYears > 1 ? 's' : ''}` : 'all time';
+
+  document.getElementById('resultsMeta').innerHTML =
+    `<strong>${newProspects.length + alreadyPublished.length}</strong> authors checked against
+     <strong>${selectedJournal.display_name}</strong> · ${windowLabel}`;
+
+  document.getElementById('countNew').textContent  = newProspects.length;
+  document.getElementById('countDone').textContent = alreadyPublished.length;
+
+  document.getElementById('descNew').innerHTML =
+    `Authors who have <em>not</em> yet published in <strong style="color:var(--green-light)">${selectedJournal.display_name}</strong> within the ${windowLabel} — prime candidates for outreach.`;
+  document.getElementById('descDone').innerHTML =
+    `Authors who have already published in <strong style="color:#d6bcfa">${selectedJournal.display_name}</strong> within the ${windowLabel}.`;
+
+  // Render new prospects
+  const listNew = document.getElementById('listNew');
+  listNew.innerHTML = '';
+  if (newProspects.length === 0) {
+    listNew.innerHTML = '<div class="empty-state"><div class="es-icon">🔍</div>All authors have already published with you.</div>';
+  } else {
+    newProspects.forEach((item, i) => {
+      listNew.appendChild(makeCard(item.row, 'new', i, { recentWork: item.recentWork }));
+    });
+  }
+
+  // Render already published
+  const listDone = document.getElementById('listDone');
+  listDone.innerHTML = '';
+  if (alreadyPublished.length === 0) {
+    listDone.innerHTML = '<div class="empty-state"><div class="es-icon">🎉</div>None of these authors have published with you yet. Fresh territory!</div>';
+  } else {
+    alreadyPublished.forEach(({ row, pubCount, sample }, i) => {
+      listDone.appendChild(makeCard(row, 'done', i, { pubCount, sample }));
+    });
+  }
+
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function makeCard(row, type, idx, pubData) {
+  const div = document.createElement('div');
+  div.className = 'author-card';
+  div.style.animationDelay = (idx * 30) + 'ms';
+
+  const name = row['Name'] || row['name'] || '—';
+  const inst = row['Institution'] || row['institution'] || '';
+  const citations = parseInt(row['Career Citations'] || row['career_citations'] || 0);
+  const orcid = row['ORCID'] || row['orcid'] || '';
+  const oaId = getOpenAlexId(row);
+
+  const links = [];
+  if (orcid) links.push(`<a class="ac-link" href="https://orcid.org/${orcid}" target="_blank">ORCID</a>`);
+  if (oaId)  links.push(`<a class="ac-link" href="https://openalex.org/authors/${oaId}" target="_blank">OpenAlex</a>`);
+
+  const pubInfo = pubData && type === 'done'
+    ? `<div class="ac-pub-count">✦ ${pubData.pubCount} publication${pubData.pubCount !== 1 ? 's' : ''} in this journal</div>`
+    : '';
+
+  let sampleRow = '';
+  if (type === 'done' && pubData && pubData.sample) {
+    const w = pubData.sample;
+    const tit = truncate80(workTitle(w));
+    const yr = w.publication_year;
+    const doi = w.doi;
+    const href = doiToHref(doi);
+    const titleInner = href
+      ? `<a href="${encodeURI(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(tit)}</a>`
+      : escapeHtml(tit);
+    sampleRow = `
+      <div class="ac-sample-row">
+        <span class="ac-sample-title">${titleInner}</span>
+        ${yr != null && yr !== '' ? `<span class="ac-year-badge">${escapeHtml(String(yr))}</span>` : ''}
+      </div>`;
+  }
+
+  let latestRow = '';
+  if (type === 'new' && pubData && pubData.recentWork) {
+    const w = pubData.recentWork;
+    const tit = truncate80(workTitle(w));
+    const doi = w.doi;
+    const jn = w.primary_location?.source?.display_name || '';
+    const yr = w.publication_year;
+    const href = doiToHref(doi);
+    const titleInner = href
+      ? `<a href="${encodeURI(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(tit)}</a>`
+      : escapeHtml(tit);
+    latestRow = `
+      <div class="ac-latest-row">
+        <span class="ac-latest-label">Latest:</span>
+        <span class="ac-latest-title">${titleInner}</span>
+        <div class="ac-latest-meta">
+          ${jn ? `<span>${escapeHtml(jn)}</span>` : ''}
+          ${yr != null && yr !== '' ? `<span class="ac-year-badge">${escapeHtml(String(yr))}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  div.innerHTML = `
+    <div class="ac-name">${name}</div>
+    <div class="ac-meta">
+      ${inst ? `<span class="ac-inst">${inst}</span>` : ''}
+      ${citations ? `<span class="ac-citations">${citations.toLocaleString()} cit.</span>` : ''}
+    </div>
+    ${links.length ? `<div class="ac-links">${links.join('')}</div>` : ''}
+    ${pubInfo}
+    ${sampleRow}
+    ${latestRow}
+  `;
+  return div;
+}
+
+/* ══════════════════════════════════════════════
+   CSV EXPORT
+══════════════════════════════════════════════ */
+function exportCSV(group) {
+  const items = group === 'new' ? newProspects : alreadyPublished;
+  const rows  = items.map(item => item.row);
+
+  const lines = [csvHeaders.map(quoteCSV).join(',')];
+  for (const row of rows) {
+    lines.push(csvHeaders.map(h => quoteCSV(row[h] || '')).join(','));
+  }
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const label = group === 'new' ? 'new-prospects' : 'already-published';
+  const journal = (selectedJournal?.display_name || 'journal').replace(/\s+/g, '-').toLowerCase();
+  a.download = `${label}-${journal}.csv`;
+  a.click();
+}
+
+function quoteCSV(val) {
+  const s = String(val);
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+/* ══════════════════════════════════════════════
+   ERROR
+══════════════════════════════════════════════ */
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+function hideError() {
+  document.getElementById('errorBanner').classList.remove('visible');
+}
+</script>
+</body>
+</html>
